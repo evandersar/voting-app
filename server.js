@@ -1,12 +1,13 @@
 'use strict';
-
-require('dotenv').config();
-
-var express = require('express');
-var routes = require('./app/routes/index.js');
-var mongoose = require('mongoose');
+var express = require('express'),
+	routes = require('./app/routes/index.js'),
+	mongoose = require('mongoose'),
+	passport = require('passport'),
+	session = require('express-session');
 
 var app = express();
+require('dotenv').config();// require('dotenv').load();
+require('./app/config/passport')(passport);
 
 //Mongoose: mpromise (mongoose's default promise library) is deprecated, plug in your own promise library instead: http://mongoosejs.com/docs/promises.html
 mongoose.Promise = global.Promise;
@@ -16,9 +17,18 @@ mongoose.connect(process.env.MONGO_URI);
 app.use('/controllers', express.static(process.cwd() + '/app/controllers'));
 app.use('/public', express.static(process.cwd() + '/public'));
 
-routes(app);
+app.use(session({
+	secret: 'secretClementine',
+	resave: false,
+	saveUninitialized: true
+}));
 
-var port = 8080;
+app.use(passport.initialize());
+app.use(passport.session());
+
+routes(app, passport);
+
+var port = process.env.PORT || 8080;
 app.listen(port, function () {
 	console.log('Node.js listening on port ' + port + '...');
 });
